@@ -1,0 +1,475 @@
+% Latex template: mahmoud.s.fahmy@students.kasralainy.edu.eg
+% For more details: https://www.sharelatex.com/learn/Beamer
+
+\documentclass{beamer}
+\usetheme{default}
+
+\usepackage{minted}
+\usepackage{hyperref}
+% \hypersetup{colorlinks=true}
+
+
+
+% THEME DARK
+% \usetheme{Default}
+
+\setbeamercolor{normal text}{fg=white,bg=black!90}
+\setbeamercolor{structure}{fg=white}
+
+\setbeamercolor{alerted text}{fg=red!85!black}
+
+\setbeamercolor{item projected}{use=item,fg=black,bg=item.fg!35}
+
+\setbeamercolor*{palette primary}{use=structure,fg=structure.fg}
+\setbeamercolor*{palette secondary}{use=structure,fg=structure.fg!95!black}
+\setbeamercolor*{palette tertiary}{use=structure,fg=structure.fg!90!black}
+\setbeamercolor*{palette quaternary}{use=structure,fg=structure.fg!95!black,bg=black!80}
+
+\setbeamercolor*{framesubtitle}{fg=white}
+
+\setbeamercolor*{block title}{parent=structure,bg=black!60}
+\setbeamercolor*{block body}{fg=black,bg=black!10}
+\setbeamercolor*{block title alerted}{parent=alerted text,bg=black!15}
+\setbeamercolor*{block title example}{parent=example text,bg=black!15}
+
+
+
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+% THEME DARK
+
+
+\usemintedstyle{paraiso-dark}
+\newminted{rust}{fontsize=\scriptsize, 
+		  %  linenos,
+		   numbersep=8pt,
+		   gobble=4,
+		   frame=lines,
+		   bgcolor=bg,
+framesep=3mm} 
+
+    \title{My experience of using Rust for game development}	% Presentation title
+    \author{Vlad Zhukov}
+    % \author[shortname]{author1  \and author2 }
+    % \institute[shortinst]{\inst{1} asd for author1 \and %
+    %                   \inst{2} affiliation for author2}
+    % Presentation author								% Today's date	
+    \date{}
+    \begin{document}
+    \definecolor{bg}{rgb}{0.1,0.1,0.1}
+    % Title page
+    % This page includes the informations defined earlier including title, author/s, affiliation/s and the date
+    \begin{frame}
+      \titlepage
+    \end{frame}
+    
+    % Outline
+    % This page includes the outline (Table of content) of the presentation. All sections and subsections will appear in the outline by default.
+    \begin{frame}{Content}
+      \tableofcontents
+    \end{frame}
+
+    \section{Game}
+    \begin{frame}
+      \title{Game}
+      \begin{itemize}
+        \item 3D world with 2D graphics and 2D gamplay
+        \item Slices of 3D world with 2D mechanics
+      \end{itemize}
+    \end{frame}
+
+    % \begin{frame}
+    %   \begin{figure}
+    %     \centering
+    %     \includegraphics[width=1.0\linewidth]{editor_screenshot.png}
+    %     \caption{Editor screenshot}
+    %     \label{fig:seq2seq}
+    %   \end{figure}
+    %   \begin{itemize}
+    %     \item Free images are used 
+    %     \item Game will look completely different(much better :))
+    %   \end{itemize}
+    % \end{frame}
+
+    % \begin{frame}
+    %   \begin{figure}
+    %     \centering
+    %     \includegraphics[width=1.0\linewidth]{gameplay_screenshot.png}
+    %     \caption{gameplay screenshot}
+    %     \label{fig:seq2seq}
+    %   \end{figure}
+    %   \begin{itemize}
+    %     \item Free images are used 
+    %     \item Game will look completely different(much better :))
+    %   \end{itemize}
+    % \end{frame}
+
+    \defverbatim[colored]\structure{
+      \begin{rustcode}
+        crate
+        └── engine
+            ├── events
+            ├── game_logic
+            ├── graphics
+            │   ├── ...
+            ├── map
+            │   ├── ...
+            ├── npc
+            │   ├── ...
+            ├── physics
+            └── ui 
+                ├── ...
+      \end{rustcode}
+    }
+
+    \section{Project structure}
+    \begin{frame}{Main crate structure}
+        % \begin{figure}
+        %     \centering
+        %     \includegraphics[width=1.0\linewidth]{project_structure.pdf}
+        %     \caption{Result of \textbf{cargo modules graph}}
+        %     \label{fig:seq2seq}
+        %   \end{figure}
+        \structure
+    \end{frame}
+
+    \section{Graphics}
+    \defverbatim[colored]\Renderer{
+    Glium with specs
+    \begin{rustcode}
+      // gfx_system.rs
+      #[repr(transparent)]
+      pub struct Renderer<'a> {
+          pub data: RenderingData<'a>, 
+                 // &RenderingData is often used as a parameter
+      }
+      
+      impl<'a, 'b> System<'a> for Renderer<'b> {
+          ...
+        fn run(&mut self, data: Self::SystemData) {
+          let mut target = self.data.display.draw(); 
+                                  // display: &'a glium::Display,
+          <DRAW CALLS HERE>
+          <CONROD GUI EVENTS HANDLING(AND DRAWING)>
+          ...
+          target.finish().unwrap();
+        }
+        ..
+      }
+      \end{rustcode}
+    }
+    \defverbatim[colored]\RenderingData{
+      \begin{rustcode}
+        pub struct RenderingData<'a> {
+          pub positions_buffers: Vec<glium::VertexBuffer<Vertex3>>,
+          pub normals_buffers: Vec<glium::VertexBuffer<Normal3>>,
+          pub indices_buffers: Vec<glium::IndexBuffer<u16>>,
+          pub textures: Vec<glium::texture::SrgbTexture2d>,
+          ...
+        }
+      }
+
+      \end{rustcode}
+    }
+
+    \defverbatim[colored]\RendererDispatch{
+      \begin{rustcode}
+        // main.rs
+        let mut rendering_system = Renderer::new(..)
+        let mut dispatcher = DispatcherBuilder::new()
+          .with(..)
+          ...
+          .with_thread_local(rendering_system)
+      \end{rustcode}
+    }
+
+
+    \defverbatim[colored]\nphysics{
+      Solution by thiolliere 
+      \href{https://github.com/thiolliere/airjump-multi}{airjump-multi(GitHub)}
+      \begin{rustcode}
+        // shared_physics.rs
+        pub fn safe_insert<'a>(
+            entity: ::specs::Entity,
+            // position, inertia, ...
+            bodies_handle: &mut ::specs::WriteStorage<'a, ::component::RigidBody>,
+            physic_world: &mut ::resource::PhysicWorld,
+            bodies_map: &mut ::resource::BodiesMap,
+        ) -> Self {
+            let body_handle = physic_world.add_rigid_body(position, inertia ...);
+            bodies_map.insert(body_handle, entity);
+            bodies_handle.insert(entity, RigidBody(body_handle));
+            RigidBody(body_handle)
+        }
+      \end{rustcode}
+    }
+    \defverbatim[colored]\safemaintain{
+      Solution by thiolliere 
+      \href{https://github.com/thiolliere/airjump-multi}{airjump-multi(GitHub)}
+      \begin{rustcode}
+          // main.rs
+          pub fn safe_maintain(world: &mut specs::World) {
+            world.maintain();
+            let mut physic_world = world.write_resource::<World<f32>>();
+            let mut bodies_map = world.write_resource::<BodiesMap>();
+        
+            let retained = world
+                .write_storage::<PhysicComponent>()
+                .retained()
+                .iter()
+                .map(|r| r.body_handle)
+                .collect::<Vec<_>>();
+            physic_world.remove_bodies(&retained);
+            for handle in &retained {
+                bodies_map.remove(handle);
+            }
+        }      
+      \end{rustcode}
+    }
+    
+    \defverbatim[colored]\IngameUI{
+      \begin{rustcode}
+        // shared_game_logic.rs
+        #[derive(Default, Debug)]
+        pub struct IngameUI {
+            pub current_draw_primitives: Vec<DrawPrimitive>,
+            pub mouse_position: (f32, f32),
+            // * shift between mouse end object position when starting moving
+            pub moving_shift: Option<Vector3<f32>>,
+            // * position of mouse in space
+            pub moving_position: Option<Vector3<f32>>, 
+                              // Option easier for impl default
+            // * state of UI entities interation
+            pub hover_id: Option<usize>,
+            pub selected_id: Option<usize>,
+            pub moving_id: Option<usize>,
+
+            // * state of entities interction
+            pub entity_hover_id: Option<::specs::Entity>,
+            pub entity_selected_id: Option<::specs::Entity>,
+            pub entity_moving_id: Option<::specs::Entity>,
+        }
+      \end{rustcode}
+    }
+
+    \defverbatim[colored]\DrawPrimitives{
+      \begin{rustcode}
+        #[derive(Debug)]
+        pub enum DrawPrimitive {
+            Cube{
+                position: Vector3<f32>,
+                size: f32,
+            },
+        }
+
+        pub struct Draggable {
+            pub position: Vector3<f32>,
+        }
+      \end{rustcode}
+    }
+
+    \defverbatim[colored]\IngameUIExample{
+      \begin{rustcode}
+        // ingame_ui.rs
+        let draggable = Draggable::new(
+            Vector3::new(
+                current_target_position.x, 
+                current_target_position.y, 
+                current_target_position.z)
+        );
+        match draggable.set(
+            draggable_id as usize, 
+            ingame_ui, // &mut IngameUI
+            & system_resources,
+            &camera,
+            mouse_position
+        ) {
+            Some(new_position) => {
+                // DO THOMETHING WITH NEW VALUE
+            }
+            None => ()
+        }
+      \end{rustcode}
+    }
+    \defverbatim[colored]\RetainedStorage{
+      Solution by thiolliere 
+      \href{https://github.com/thiolliere/airjump-multi}{airjump-multi(GitHub)}
+      \begin{rustcode}
+        //retained_storage.rs
+        pub struct RetainedStorage<C, T = UnprotectedStorage<C>> {
+            retained: Vec<C>,
+            storage: T,
+            phantom: PhantomData<C>,
+        }
+
+        impl<C, T> Retained<C> for RetainedStorage<C, T> {
+            fn retained(&mut self) -> Vec<C> {
+                mem::replace(&mut self.retained, vec![])
+            }
+        }
+        //shared_physics.rs
+        pub struct RigidBody(BodyHandle);
+        impl ::specs::Component for RigidBody {
+            type Storage = RetainedStorage<Self>;
+        }
+      \end{rustcode}
+    }
+
+    \defverbatim[colored]\Saving{
+      map.ron $\leftrightarrow$ Map with RawEntityes $\leftrightarrow$ specs objects
+      \begin{rustcode}
+        // map/common.rs
+        #[derive(Debug, Serialize, Deserialize)]
+        pub struct Map {
+            pub entities: Vec<RawEntity>,
+            pub positions: Vec<Option<Isometry3<f32>>>,
+            pub scales: Vec<Option<ScaleComponent>>,
+            pub slices: Slices,
+        }
+      \end{rustcode}
+    }
+    
+    \defverbatim[colored]\RawEntity{
+      % \begin{itemize}
+      %   \item Builder pattern
+      % \end{itemize}
+      \begin{rustcode}
+        // map/common.rs
+        #[derive(Debug, Default, Clone, Serialize, Deserialize, Builder)]
+        #[builder(setter(into))]
+        #[builder(default)]
+        #[builder(derive(Debug, Serialize, Deserialize))]
+        pub struct RawEntity {
+            pub gl_name: Option<String>,
+            pub cs_texture_name: Option<String>,
+            pub physic_name: Option<String>,
+            pub renderer_name: Option<String>,
+            ...
+        }
+      \end{rustcode}
+      Builder pattern with \textit{derive\_builder} crate
+    }
+
+    \defverbatim[colored]\OPTLevels{
+      \begin{rustcode}
+        [profile.dev]
+        opt-level = 0
+        debug = true
+
+        [profile.dev.overrides."*"]
+        opt-level = 3
+      \end{rustcode}
+    }
+    \begin{frame}
+      \Renderer
+    \end{frame}
+
+    \begin{frame}
+      \RenderingData
+      it's sort of \ "my little ECS" while using specs...
+    \end{frame}
+
+    \begin{frame}
+      If any of these please let me know
+      \begin{itemize}
+        \item mb there is way to implement thread local components/resources with specs
+        \item mb there is better way to do it
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}
+      \RendererDispatch
+      glium can be called only thread locally
+    \end{frame}
+
+    \section{Physics}
+
+    \begin{frame}
+      \begin{itemize}
+        \item nphysics
+        \item Many systems
+        \item One of these calls step()
+      \end{itemize}
+      How do I use nphysics with specs?
+    \end{frame}
+
+    \begin{frame}
+      \RetainedStorage
+    \end{frame}
+
+    \begin{frame}
+      \nphysics
+    \end{frame}
+
+    \begin{frame}
+      \safemaintain
+    \end{frame}
+
+    \section{UI}
+
+    \begin{frame}
+      \begin{itemize}
+        \item conrod
+        \item small "ingame" UI(dragging objects for now)
+      \end{itemize}
+      conrod is easy, let's talk about ingame UI
+    \end{frame}
+
+    \begin{frame}
+      ImGUI style (only for editor, easiest implementation)
+      \IngameUI
+    \end{frame}
+
+    \begin{frame}
+      \DrawPrimitives
+    \end{frame}
+
+    \begin{frame}
+      \IngameUIExample
+    \end{frame}
+
+    \section{Map and saving}
+    \begin{frame}
+      \centering
+      How to implement saving?
+      \begin{itemize}
+        \item specs serde searializing deserializing (Hard)
+        \item searializing/deserializing intermidiate objects (Ok)
+      \end{itemize}
+    \end{frame}
+
+    \begin{frame}
+      \Saving
+    \end{frame}
+
+    \begin{frame}
+      \RawEntity
+    \end{frame}
+
+    \section{Compilation time}
+    \begin{frame}
+      Rust nightly opt-level. My crate is in debug, dependencies are in release
+      \OPTLevels
+    \end{frame}
+
+    \begin{frame}
+      Separate project on crates helps(not that much)\\
+      My crates are:
+      \begin{itemize}
+        \item main crate
+        \item misc (probably will name it "common")
+        \item physics
+        \item rendering
+      \end{itemize}
+      $\sim$ 10s when change parent crate vs $\sim$ 20s without crate separating
+      Don't do it like that
+    \end{frame}
+\end{document}
